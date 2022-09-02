@@ -1,0 +1,26 @@
+name: dev-deploy
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  deployment:
+    runs-on: dev
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          touch .env
+          echo MONGO_URI="${{secrets.MONGO_URI}}" >> .env
+          echo ENCRYPT_KEY="${{secrets.ENCRYPT_KEY}}" >> .env
+          echo SIGN_KEY="${{secrets.SIGN_KEY}}" >> .env
+          echo APP_URL="${{secrets.APP_URL}}" >> .env
+          echo POINTS_COLLECTION_INTERVAL="${{secrets.POINTS_COLLECTION_INTERVAL}}" >> .env
+      - run: yarn install
+      - run: pm2 delete lyradig-api
+        continue-on-error: true
+      - run: pm2 start npm --name lyradig-api -- run prod
+      - run: pm2 describe lyradig-api
+      - run: pm2 logs --nostream
